@@ -3,7 +3,7 @@ langchain
 langchain-core
 langchain-community
 langchain-pinecone
-
+uvicorn
 
 langchain-google-genai
 google-generativeai
