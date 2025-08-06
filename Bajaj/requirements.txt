@@ -4,7 +4,7 @@ langchain-core
 langchain-community
 langchain-pinecone
 uvicorn
-
+pypdf
 langchain-google-genai
 google-generativeai
 
