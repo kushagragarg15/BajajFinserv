@@ -1,10 +1,15 @@
 # main.py
+import sys
 import os
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field, HttpUrl
 from typing import List
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 
 # Import the modularized components
 from app.input_documents import process_document_from_url
