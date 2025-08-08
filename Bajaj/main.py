@@ -5,8 +5,9 @@ import asyncio
 import time
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Security, status, APIRouter
+from fastapi import FastAPI, Depends, HTTPException, Security, status, APIRouter, Request
 from fastapi.security import APIKeyHeader
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, HttpUrl
 from typing import List
 
@@ -37,6 +38,26 @@ app = FastAPI(
     description="An API for processing documents and answering questions using LLMs and vector search.",
     version="1.0.0"
 )
+
+# ✅ Request Logging Middleware for Debugging and Monitoring
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests for debugging and monitoring purposes"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Log the incoming request
+    logger.info(f"[Request] {request.method} {request.url} from {request.client.host if request.client else 'unknown'}")
+    
+    # Process the request
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    
+    # Log the response
+    logger.info(f"[Response] {request.method} {request.url} -> {response.status_code} ({process_time:.3f}s)")
+    
+    return response
 
 # Create API v1 router
 api_v1_router = APIRouter(prefix="/api/v1", tags=["API v1"])
@@ -146,6 +167,12 @@ async def api_v1_root():
             "performance": "/performance"
         }
     }
+
+# --- Main API Endpoint (HEAD) - For Monitoring ---
+@api_v1_router.head("/hackrx/run", tags=["Query System"])
+async def hackrx_run_head():
+    """HEAD endpoint for monitoring services"""
+    return Response(status_code=200)
 
 # --- Main API Endpoint (GET) - Information ---
 @api_v1_router.get("/hackrx/run", tags=["Query System"])
@@ -351,9 +378,26 @@ async def run_submission(
         
         raise ErrorHandler.handle_request_error(e, "api_request")
 
+# ✅ Explicit HEAD handler to prevent 405 from uptime monitoring services
+@app.head("/", tags=["Health Check"])
+async def head_root():
+    """HEAD endpoint for uptime monitoring services like Uptime Robot"""
+    return Response(status_code=200)
+
+# Standard GET route to return a JSON message for browser or API access
 @app.get("/", tags=["Health Check"])
 async def read_root():
-    return {"status": "ok", "message": "Intelligent Query-Retrieval System is running."}
+    """Root endpoint that returns system status information"""
+    return JSONResponse(
+        content={
+            "status": "ok", 
+            "message": "Intelligent Query-Retrieval System is running.",
+            "version": "1.0.0",
+            "api_base": "/api/v1",
+            "documentation": "/docs"
+        },
+        status_code=200
+    )
 
 @app.get("/performance", tags=["Performance"])
 async def get_performance_stats():
