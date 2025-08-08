@@ -5,7 +5,7 @@ import asyncio
 import time
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Security, status
+from fastapi import FastAPI, Depends, HTTPException, Security, status, APIRouter
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field, HttpUrl
 from typing import List
@@ -37,6 +37,9 @@ app = FastAPI(
     description="An API for processing documents and answering questions using LLMs and vector search.",
     version="1.0.0"
 )
+
+# Create API v1 router
+api_v1_router = APIRouter(prefix="/api/v1", tags=["API v1"])
 
 # --- Startup Event Handler ---
 @app.on_event("startup")
@@ -126,9 +129,70 @@ class SubmissionRequest(BaseModel):
 class SubmissionResponse(BaseModel):
     answers: List[str] = Field(..., description="A list of answers corresponding to the questions asked.")
 
-# --- API Endpoint ---
-@app.post(
-    "/api/v1/hackrx/run",
+# --- API Router for v1 ---
+# (Router already defined above)
+
+# --- API v1 Root Endpoint ---
+@api_v1_router.get("", tags=["API v1"])
+async def api_v1_root():
+    """API v1 root endpoint"""
+    return {
+        "message": "API v1 is running",
+        "version": "1.0.0",
+        "base_url": "/api/v1",
+        "endpoints": {
+            "main_api": "/hackrx/run",
+            "health": "/health",
+            "performance": "/performance"
+        }
+    }
+
+# --- Main API Endpoint (GET) - Information ---
+@api_v1_router.get("/hackrx/run", tags=["Query System"])
+async def hackrx_run_info():
+    """
+    GET endpoint for /hackrx/run - Provides API information and usage instructions
+    """
+    return {
+        "message": "HackRX Document Query API",
+        "version": "1.0.0",
+        "endpoint": "/api/v1/hackrx/run",
+        "methods": {
+            "GET": "Get API information (this endpoint)",
+            "POST": "Submit document query for processing"
+        },
+        "usage": {
+            "method": "POST",
+            "url": "http://localhost:8000/api/v1/hackrx/run",
+            "headers": {
+                "Authorization": "Bearer 04882ff997f04a7548a2640b6ac4ca31bb61a48594229f92000cc82b4e6dbd3d",
+                "Content-Type": "application/json"
+            },
+            "body_format": {
+                "documents": "URL to PDF document",
+                "questions": ["Array of questions to ask about the document"]
+            }
+        },
+        "example_request": {
+            "documents": "https://example.com/document.pdf",
+            "questions": [
+                "What is this document about?",
+                "What are the main points?"
+            ]
+        },
+        "features": [
+            "Async document processing",
+            "Parallel question answering",
+            "Performance monitoring",
+            "Direct retrieval (no agent overhead)",
+            "Response time optimization"
+        ],
+        "documentation": "http://localhost:8000/docs"
+    }
+
+# --- Main API Endpoint (POST) - Processing ---
+@api_v1_router.post(
+    "/hackrx/run",
     response_model=SubmissionResponse,
     summary="Run Document Query Submission",
     tags=["Query System"]
@@ -471,3 +535,6 @@ async def health_check():
             },
             "initialized": global_resources.is_initialized() if global_resources else False
         }
+
+# Include API v1 router (must be after all endpoints are defined)
+app.include_router(api_v1_router)

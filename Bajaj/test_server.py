@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Test Server", version="1.0.0")
 
+# Create API v1 router for test server
+from fastapi import APIRouter
+api_v1_router = APIRouter(prefix="/api/v1", tags=["API v1"])
+
 class SubmissionRequest(BaseModel):
     documents: HttpUrl
     questions: List[str]
@@ -36,7 +40,7 @@ async def health_check():
         "version": "1.0.0"
     }
 
-@app.post("/api/v1/hackrx/run", response_model=SubmissionResponse)
+@api_v1_router.post("/hackrx/run", response_model=SubmissionResponse)
 async def test_endpoint(request: SubmissionRequest):
     """Test endpoint that returns mock responses"""
     logger.info(f"Received request with {len(request.questions)} questions")
@@ -64,5 +68,9 @@ if __name__ == "__main__":
     print("Server will be available at: http://localhost:8001")
     print("Health check: http://localhost:8001/health")
     print("API endpoint: http://localhost:8001/api/v1/hackrx/run")
-    
+
+# Include the API v1 router
+app.include_router(api_v1_router)
+
+if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001, log_level="info")

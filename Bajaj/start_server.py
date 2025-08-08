@@ -72,8 +72,9 @@ def start_server():
         from main import app
         
         logger.info("Server will be available at: http://localhost:8000")
-        logger.info("Health check: http://localhost:8000/health")
+        logger.info("Base URL: http://localhost:8000/api/v1")
         logger.info("API endpoint: http://localhost:8000/api/v1/hackrx/run")
+        logger.info("Health check: http://localhost:8000/health")
         logger.info("Performance stats: http://localhost:8000/performance")
         logger.info("Performance analysis: http://localhost:8000/performance/analysis")
         logger.info("")
